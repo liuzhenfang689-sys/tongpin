@@ -919,7 +919,7 @@
 <!-- FIREBASE -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInAnonymously, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInAnonymously, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, addDoc, collection, query, orderBy, onSnapshot, updateDoc, arrayUnion, arrayRemove, increment, serverTimestamp, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -934,7 +934,7 @@ const firebaseConfig = {
 const configured = true;
 window._cfg = configured;
 
-if (!configured) {
+if (!configured) 
   hideLoading();
   initDemo();
 } else {
@@ -943,8 +943,28 @@ if (!configured) {
   const db = getFirestore(app);
   window._auth = auth;
   window._db = db;
-  window._fb = { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInAnonymously, GoogleAuthProvider, signInWithPopup, updateProfile, signOut, doc, setDoc, getDoc, addDoc, collection, query, orderBy, onSnapshot, updateDoc, arrayUnion, arrayRemove, increment, serverTimestamp, limit };
+  window._fb = { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInAnonymously, GoogleAuthProvider, signInWithRedirect, getRedirectResult, updateProfile, signOut, doc, setDoc, getDoc, addDoc, collection, query, orderBy, onSnapshot, updateDoc, arrayUnion, arrayRemove, increment, serverTimestamp, limit };
 
+  // 处理 Google Redirect 回调结果（第一次登录时创建 users 文档）
+window._fb.getRedirectResult(auth)
+  .then(async (result) => {
+    if (!result || !result.user) return;
+    const user = result.user;
+
+    const snap = await window._fb.getDoc(window._fb.doc(db, 'users', user.uid));
+    if (!snap.exists()) {
+      await window._fb.setDoc(window._fb.doc(db, 'users', user.uid), {
+        name: user.displayName || 'Google用户',
+        emoji: '🌙',
+        email: user.email,
+        createdAt: window._fb.serverTimestamp()
+      });
+    }
+  })
+  .catch((e) => {
+    console.error('getRedirectResult error:', e);
+    toast('Google 登录失败：' + e.message);
+  });
   onAuthStateChanged(auth, async user => {
     hideLoading();
     if (user) {
@@ -1021,15 +1041,10 @@ window.doGoogle = async function() {
   if(!window._auth) return toast('演示模式不支持 Google 登录');
   try {
     const provider = new window._fb.GoogleAuthProvider();
-    const cred = await window._fb.signInWithPopup(window._auth, provider);
-    const user = cred.user;
-    const snap = await window._fb.getDoc(window._fb.doc(window._db,'users',user.uid));
-    if(!snap.exists()) {
-      await window._fb.setDoc(window._fb.doc(window._db,'users',user.uid),{
-        name: user.displayName||'Google用户', emoji:'🌙', email:user.email, createdAt:window._fb.serverTimestamp()
-      });
-    }
-  } catch(e) { toast('Google 登录失败：'+e.message); }
+    await window._fb.signInWithRedirect(window._auth, provider);
+  } catch(e) {
+    toast('Google 登录失败：' + e.message);
+  }
 };
 </script>
 
