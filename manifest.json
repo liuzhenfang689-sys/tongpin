@@ -1,0 +1,26 @@
+{
+  "name": "同频 · 今日之声",
+  "short_name": "同频",
+  "description": "每日分享一首歌，与最想同频的人",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#080510",
+  "theme_color": "#080510",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["social", "music", "lifestyle"],
+  "lang": "zh-CN"
+}

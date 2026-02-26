@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="theme-color" content="#06030f"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="同频"/>
+  <link rel="manifest" href="manifest.json"/>
+  <title>同频 · 今日之声</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600&family=ZCOOL+XiaoWei&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #06030f;
+      --bg2: #0d0820;
+      --bg3: #130c2a;
+      --s1: rgba(255,255,255,0.04);
+      --s2: rgba(255,255,255,0.07);
+      --s3: rgba(255,255,255,0.12);
+      --b1: rgba(255,255,255,0.07);
+      --b2: rgba(255,255,255,0.13);
+      --b3: rgba(255,255,255,0.22);
+      --v: #7c3aed;
+      --vs: #a78bfa;
+      --vl: #c4b5fd;
+      --r: #e11d48;
+      --rs: #fb7185;
+      --rl: #fda4af;
+      --g: #059669;
+      --gs: #34d399;
+      --a: #d97706;
+      --as: #fbbf24;
+      --sky: #0ea5e9;
+      --t1: #f5f0ff;
+      --t2: rgba(245,240,255,0.6);
+      --t3: rgba(245,240,255,0.3);
+      --t4: rgba(245,240,255,0.12);
+      --rad: 20px;
+      --rads: 13px;
+    }
+
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    html{scroll-behavior:smooth}
+
+    body {
+      background: var(--bg);
+      color: var(--t1);
+      font-family: 'Noto Serif SC', serif;
+      min-height: 100dvh;
+      max-width: 430px;
+      margin: 0 auto;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Grain texture overlay */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0; opacity: 0.4;
+    }
+
+    /* Ambient glows */
+    .glow {
+      position: fixed; pointer-events: none; z-index: 0;
+      border-radius: 50%; filter: blur(80px);
+    }
+    .glow-1 {
+      width: 400px; height: 400px;
+      top: -100px; left: -80px;
+      background: radial-gradient(circle, rgba(124,58,237,0.15), transparent 70%);
+      animation: floatA 14s ease-in-out infinite alternate;
+    }
+    .glow-2 {
+      width: 350px; height: 350px;
+      bottom: 100px; right: -60px;
+      background: radial-gradient(circle, rgba(225,29,72,0.1), transparent 70%);
+      animation: floatB 18s ease-in-out infinite alternate;
+    }
+    .glow-3 {
+      width: 300px; height: 300px;
+      top: 50%; left: 30%;
+      background: radial-gradient(circle, rgba(14,165,233,0.06), transparent 70%);
+      animation: floatC 22s ease-in-out infinite alternate;
+    }
+    @keyframes floatA { from{transform:translate(0,0) scale(1)} to{transform:translate(30px,50px) scale(1.15)} }
+    @keyframes floatB { from{transform:translate(0,0) scale(1)} to{transform:translate(-40px,-30px) scale(1.1)} }
+    @keyframes floatC { from{transform:translate(0,0)} to{transform:translate(20px,-40px)} }
+
+    /* ===== SCREENS ===== */
+    .screen {
+      display: none;
+      position: relative; z-index: 1;
+      min-height: 100dvh;
+      animation: fadeUp .35s cubic-bezier(.22,1,.36,1);
+    }
+    .screen.active { display: block; }
+    .screen.padnav { padding-bottom: 86px; }
+    @keyframes fadeUp {
+      from{opacity:0;transform:translateY(16px)}
+      to{opacity:1;transform:translateY(0)}
+    }
+
+    /* ===== AUTH ===== */
+    #screen-auth { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100dvh; padding:40px 28px; }
+    #screen-auth.active { display:flex; }
+
+    .auth-brand {
+      display: flex; flex-direction: column; align-items: center;
+      margin-bottom: 44px;
+    }
+    .auth-logo-mark {
+      width: 72px; height: 72px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, var(--v), var(--r));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 34px;
+      margin-bottom: 14px;
+      box-shadow: 0 8px 32px rgba(124,58,237,0.35);
+    }
+    .auth-logo-name {
+      font-family: 'ZCOOL XiaoWei', serif;
+      font-size: 36px;
+      background: linear-gradient(135deg, var(--vl), var(--rl));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+    }
+    .auth-tagline { font-size: 13px; color: var(--t3); font-family: 'Playfair Display', serif; font-style: italic; }
+
+    .tab-switcher {
+      display: flex;
+      background: var(--s2);
+      border-radius: 30px;
+      padding: 4px;
+      margin-bottom: 24px;
+      width: 100%;
+    }
+    .tab-btn {
+      flex: 1; padding: 10px;
+      border-radius: 26px; border: none; background: transparent;
+      color: var(--t3); font-size: 14px;
+      font-family: 'Noto Serif SC', serif;
+      cursor: pointer; transition: all .25s;
+    }
+    .tab-btn.on { background: var(--s3); color: var(--t1); }
+
+    .auth-form { width: 100%; display: flex; flex-direction: column; gap: 13px; }
+
+    .fld { display: flex; flex-direction: column; gap: 6px; }
+    .fld-label { font-size: 11px; color: var(--t3); letter-spacing: .07em; }
+    .fld-input {
+      background: var(--s2); border: 1px solid var(--b2);
+      border-radius: var(--rads); padding: 13px 15px;
+      color: var(--t1); font-size: 15px;
+      font-family: 'Noto Serif SC', serif;
+      outline: none; transition: border-color .2s, box-shadow .2s; width: 100%;
+    }
+    .fld-input:focus { border-color: var(--vs); box-shadow: 0 0 0 3px rgba(124,58,237,0.15); }
+    .fld-input::placeholder { color: var(--t4); }
+
+    .btn-main {
+      width: 100%; padding: 15px;
+      border-radius: var(--rad);
+      background: linear-gradient(135deg, var(--v), var(--r));
+      border: none; color: white;
+      font-size: 15px; font-family: 'Noto Serif SC', serif;
+      cursor: pointer; letter-spacing: .04em;
+      transition: opacity .2s, transform .15s;
+      position: relative; overflow: hidden; margin-top: 4px;
+      box-shadow: 0 4px 20px rgba(124,58,237,0.3);
+    }
+    .btn-main:active { opacity: .85; transform: scale(.98); }
+    .btn-main:disabled { opacity: .45; cursor: not-allowed; }
+
+    .divider-or { display: flex; align-items: center; gap: 10px; color: var(--t3); font-size: 12px; }
+    .divider-or::before,.divider-or::after { content: ''; flex: 1; height: 1px; background: var(--b1); }
+
+    .btn-google {
+      width: 100%; padding: 13px;
+      border-radius: var(--rad);
+      background: var(--s2); border: 1px solid var(--b2);
+      color: var(--t2); font-size: 14px;
+      font-family: 'Noto Serif SC', serif;
+      cursor: pointer; transition: background .2s;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+    }
+    .btn-google:active { background: var(--s3); }
+    .google-icon { width: 20px; height: 20px; }
+
+    .btn-ghost {
+      width: 100%; padding: 13px;
+      border-radius: var(--rad);
+      background: transparent; border: 1px solid var(--b1);
+      color: var(--t3); font-size: 13px;
+      font-family: 'Noto Serif SC', serif;
+      cursor: pointer; transition: background .2s;
+    }
+    .btn-ghost:active { background: var(--s1); }
+
+    .emoji-picker { display: flex; gap: 10px; flex-wrap: wrap; padding: 6px 0; }
+    .ep-item {
+      font-size: 26px; cursor: pointer;
+      transition: transform .2s, filter .2s;
+      filter: grayscale(30%);
+    }
+    .ep-item.picked { transform: scale(1.2); filter: none drop-shadow(0 0 8px gold); }
+
+    /* ===== ROOM ===== */
+    #screen-room { display:flex; flex-direction:column; padding:60px 24px 40px; }
+    #screen-room.active { display:flex; }
+
+    .room-hero { margin-bottom: 32px; }
+    .room-hero-title { font-size: 26px; line-height: 1.3; margin-bottom: 8px; }
+    .room-hero-sub { font-size: 13px; color: var(--t3); line-height: 1.6; }
+
+    .room-block {
+      background: var(--s2); border: 1px solid var(--b2);
+      border-radius: var(--rad); padding: 20px; margin-bottom: 12px;
+    }
+    .room-block-title { font-size: 14px; margin-bottom: 4px; }
+    .room-block-desc { font-size: 12px; color: var(--t3); line-height: 1.5; margin-bottom: 14px; }
+
+    .code-box {
+      background: var(--bg); border-radius: var(--rads);
+      padding: 16px; text-align: center;
+      font-size: 30px; letter-spacing: .22em;
+      font-family: 'Playfair Display', serif;
+      color: var(--vs); margin-bottom: 10px;
+      cursor: pointer; transition: background .2s;
+      user-select: all;
+    }
+    .code-box:active { background: var(--s1); }
+    .code-hint { font-size: 11px; color: var(--t3); text-align: center; }
+
+    /* ===== PAGE HEADER ===== */
+    .pg-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 52px 20px 16px;
+    }
+    .pg-title {
+      font-family: 'ZCOOL XiaoWei', serif; font-size: 26px;
+      background: linear-gradient(135deg, var(--vl), var(--rl));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .pg-date { font-size: 11px; color: var(--t3); margin-top: 2px; }
+
+    .avatar-pill {
+      display: flex; align-items: center; gap: 7px;
+      background: var(--s2); border: 1px solid var(--b2);
+      border-radius: 30px; padding: 5px 12px 5px 5px; cursor: pointer;
+    }
+    .av-circle {
+      width: 30px; height: 30px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; font-size: 15px;
+    }
+    .av-name { font-size: 12px; color: var(--t2); }
+
+    /* ===== CONNECTION BAR ===== */
+    .conn-bar {
+      margin: 0 18px 14px;
+      background: linear-gradient(135deg, rgba(124,58,237,0.12), rgba(225,29,72,0.08));
+      border: 1px solid rgba(124,58,237,0.2);
+      border-radius: var(--rad); padding: 13px 16px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .conn-avs { display: flex; }
+    .conn-av {
+      width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px; border: 2px solid var(--bg);
+    }
+    .conn-av:nth-child(2) { margin-left: -9px; }
+    .conn-text { flex: 1; }
+    .conn-names { font-size: 13px; }
+    .conn-status { font-size: 11px; color: var(--t3); margin-top: 2px; }
+    .conn-led {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--gs); box-shadow: 0 0 8px var(--gs);
+      animation: led 2s ease-in-out infinite;
+    }
+    .conn-led.off { background: var(--t4); box-shadow: none; animation: none; }
+    @keyframes led { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+    /* ===== SECTION LABEL ===== */
+    .sec-lbl {
+      font-size: 10px; color: var(--t3);
+      letter-spacing: .14em; text-transform: uppercase;
+      padding: 0 20px 9px;
+    }
+
+    /* ===== SONG CARDS ===== */
+    .song-card {
+      margin: 0 18px 13px;
+      border-radius: var(--rad); border: 1px solid var(--b2);
+      overflow: hidden; transition: transform .2s;
+    }
+    .song-card:active { transform: scale(.98); }
+
+    .card-top { padding: 16px 16px 13px; position: relative; }
+    .card-by {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 13px;
+    }
+    .card-av {
+      width: 26px; height: 26px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; font-size: 13px;
+    }
+    .card-by-name { font-size: 12px; color: var(--t2); }
+    .card-by-time { font-size: 10px; color: var(--t3); margin-left: auto; }
+
+    .song-row { display: flex; align-items: center; gap: 13px; }
+    .disc {
+      width: 60px; height: 60px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 25px; flex-shrink: 0; position: relative;
+    }
+    .disc::after {
+      content: ''; position: absolute;
+      width: 13px; height: 13px; border-radius: 50%;
+      background: var(--bg); top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+    }
+    .disc.spin { animation: dspin 6s linear infinite; }
+    @keyframes dspin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+    .disc.spin::after { animation: dspin 6s linear infinite reverse; }
+
+    .song-info {}
+    .song-name { font-size: 16px; font-weight: 600; margin-bottom: 3px; }
+    .song-art { font-size: 12px; color: var(--t2); }
+    .song-mood-tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      margin-top: 7px; background: rgba(255,255,255,0.07);
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 11px; color: var(--t2);
+    }
+
+    .card-note {
+      padding: 10px 16px 14px;
+      border-top: 1px solid var(--b1);
+      font-size: 12px; color: var(--t2);
+      line-height: 1.65; font-style: italic;
+    }
+
+    .empty-slot {
+      margin: 0 18px 13px;
+      border-radius: var(--rad); border: 1px dashed var(--b2);
+      padding: 22px; text-align: center; cursor: pointer;
+      transition: background .2s;
+    }
+    .empty-slot:active { background: var(--s1); }
+    .empty-ico { font-size: 30px; opacity: .3; margin-bottom: 7px; }
+    .empty-txt { font-size: 13px; color: var(--t3); }
+    .empty-cta { font-size: 12px; color: var(--vs); margin-top: 3px; }
+
+    /* ===== MOOD CHIPS ===== */
+    .mood-row {
+      display: flex; gap: 7px;
+      padding: 0 18px 18px;
+      overflow-x: auto; scrollbar-width: none;
+    }
+    .mood-row::-webkit-scrollbar { display: none; }
+    .mood-chip {
+      flex-shrink: 0; padding: 6px 14px;
+      border-radius: 30px; border: 1px solid var(--b2);
+      background: var(--s1); font-size: 12px;
+      cursor: pointer; transition: all .2s; white-space: nowrap;
+    }
+    .mood-chip.on {
+      background: linear-gradient(135deg, rgba(124,58,237,.28), rgba(225,29,72,.18));
+      border-color: rgba(124,58,237,.4); color: var(--t1);
+    }
+
+    /* ===== BOTTOM NAV ===== */
+    .bot-nav {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 430px;
+      background: rgba(6,3,15,.85);
+      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+      border-top: 1px solid var(--b1);
+      display: flex;
+      padding: 9px 0 max(11px, env(safe-area-inset-bottom));
+      z-index: 100;
+    }
+    .nav-btn {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 3px;
+      cursor: pointer; border: none; background: transparent;
+      color: var(--t3); font-size: 9px;
+      font-family: 'Noto Serif SC', serif;
+      padding: 3px 0; transition: color .2s;
+    }
+    .nav-btn.on { color: var(--vs); }
+    .nav-ico { font-size: 21px; line-height: 1; }
+    .nav-btn.center-btn .nav-ico {
+      font-size: 27px;
+      background: linear-gradient(135deg, var(--vs), var(--rs));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .nav-badge {
+      position: absolute; top: -2px; right: -4px;
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--rs); border: 2px solid var(--bg);
+    }
+    .nav-ico-wrap { position: relative; display: inline-block; }
+
+    /* ===== POST SCREEN ===== */
+    .sub-header {
+      display: flex; align-items: center; gap: 13px;
+      padding: 52px 20px 18px;
+    }
+    .icon-btn {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--s2); border: 1px solid var(--b2);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 15px; flex-shrink: 0;
+    }
+    .sub-title { font-size: 19px; }
+
+    .form-blk { margin: 0 18px 14px; }
+    .form-lbl { font-size: 10px; color: var(--t3); letter-spacing: .08em; margin-bottom: 7px; display: block; }
+    .form-inp {
+      width: 100%; background: var(--s2); border: 1px solid var(--b2);
+      border-radius: var(--rads); padding: 12px 15px;
+      color: var(--t1); font-size: 14px;
+      font-family: 'Noto Serif SC', serif;
+      outline: none; transition: border-color .2s;
+    }
+    .form-inp:focus { border-color: var(--vs); }
+    .form-inp::placeholder { color: var(--t4); }
+    textarea.form-inp { resize: none; height: 86px; line-height: 1.6; }
+
+    .results-box {
+      margin: 0 18px 13px;
+      background: var(--s1); border: 1px solid var(--b2);
+      border-radius: var(--rads); overflow: hidden;
+    }
+    .res-row {
+      display: flex; align-items: center; gap: 11px;
+      padding: 10px 13px; cursor: pointer;
+      border-bottom: 1px solid var(--b1); transition: background .15s;
+    }
+    .res-row:last-child { border-bottom: none; }
+    .res-row:active { background: var(--s2); }
+    .res-ico {
+      width: 36px; height: 36px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px; flex-shrink: 0;
+    }
+    .res-name { font-size: 13px; }
+    .res-art { font-size: 11px; color: var(--t3); }
+
+    .sel-box {
+      margin: 0 18px 14px; background: var(--s2);
+      border: 1px solid var(--b2); border-radius: var(--rads); padding: 13px 15px;
+    }
+
+    .mood-btns {
+      display: flex; gap: 9px;
+      padding: 0 18px 16px; overflow-x: auto; scrollbar-width: none;
+    }
+    .mood-btns::-webkit-scrollbar { display: none; }
+    .m-btn {
+      flex-shrink: 0; width: 52px; height: 52px;
+      border-radius: 13px; background: var(--s2);
+      border: 2px solid transparent; font-size: 24px;
+      cursor: pointer; transition: all .2s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .m-btn.on {
+      border-color: var(--vs);
+      background: rgba(124,58,237,.15);
+      transform: scale(1.08);
+    }
+
+    /* ===== FEED ===== */
+    .feed-item {
+      margin: 0 18px 11px;
+      background: var(--s1); border: 1px solid var(--b1);
+      border-radius: var(--rad); padding: 15px;
+    }
+    .fi-top { display: flex; align-items: center; gap: 9px; margin-bottom: 11px; }
+    .fi-av { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    .fi-name { font-size: 13px; }
+    .fi-time { font-size: 10px; color: var(--t3); }
+    .fi-song {
+      display: flex; align-items: center; gap: 11px;
+      background: var(--s2); border-radius: var(--rads);
+      padding: 10px; margin-bottom: 9px;
+    }
+    .fi-cov { width: 42px; height: 42px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0; }
+    .fi-sname { font-size: 13px; font-weight: 600; }
+    .fi-sart { font-size: 11px; color: var(--t3); }
+    .fi-note { font-size: 12px; color: var(--t2); line-height: 1.6; margin-bottom: 9px; font-style: italic; }
+    .fi-foot { display: flex; align-items: center; }
+    .fi-badge { font-size: 11px; background: rgba(255,255,255,.05); padding: 3px 10px; border-radius: 20px; color: var(--t2); }
+    .fi-like {
+      margin-left: auto; display: flex; align-items: center; gap: 4px;
+      background: none; border: none; color: var(--t3);
+      font-size: 12px; cursor: pointer;
+      font-family: 'Noto Serif SC', serif;
+      padding: 4px 8px; border-radius: 20px; transition: all .2s;
+    }
+    .fi-like.liked { color: var(--rs); background: rgba(251,113,133,.08); }
+
+    /* ===== CHAT SCREEN ===== */
+    .chat-header {
+      position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 430px;
+      background: rgba(6,3,15,.9); backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--b1);
+      padding: 52px 20px 14px;
+      z-index: 50; display: flex; align-items: center; gap: 12px;
+    }
+    .chat-partner-info { flex: 1; }
+    .chat-partner-name { font-size: 15px; }
+    .chat-partner-status { font-size: 11px; color: var(--gs); }
+
+    .chat-messages {
+      padding: 130px 16px 100px;
+      display: flex; flex-direction: column; gap: 10px;
+      min-height: 100dvh;
+    }
+
+    .msg-bubble {
+      max-width: 75%; padding: 10px 14px;
+      border-radius: 18px; font-size: 14px; line-height: 1.55;
+      animation: bubbleIn .25s cubic-bezier(.22,1,.36,1);
+    }
+    @keyframes bubbleIn {
+      from{opacity:0;transform:scale(.92) translateY(6px)}
+      to{opacity:1;transform:scale(1) translateY(0)}
+    }
+    .msg-bubble.mine {
+      align-self: flex-end;
+      background: linear-gradient(135deg, var(--v), var(--r));
+      color: white;
+      border-bottom-right-radius: 5px;
+    }
+    .msg-bubble.theirs {
+      align-self: flex-start;
+      background: var(--s3);
+      color: var(--t1);
+      border-bottom-left-radius: 5px;
+    }
+    .msg-time { font-size: 10px; opacity: .55; margin-top: 4px; }
+    .msg-time.r { text-align: right; }
+
+    .msg-song-card {
+      max-width: 80%;
+      background: var(--s2); border: 1px solid var(--b2);
+      border-radius: 16px; padding: 12px;
+      display: flex; align-items: center; gap: 10px;
+      animation: bubbleIn .25s cubic-bezier(.22,1,.36,1);
+    }
+    .msg-song-card.mine { align-self: flex-end; border-bottom-right-radius: 5px; }
+    .msg-song-card.theirs { align-self: flex-start; border-bottom-left-radius: 5px; }
+
+    .chat-input-bar {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 430px;
+      background: rgba(6,3,15,.9); backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--b1);
+      padding: 10px 14px max(14px,env(safe-area-inset-bottom));
+      display: flex; align-items: center; gap: 10px; z-index: 50;
+    }
+    .chat-inp {
+      flex: 1; background: var(--s2); border: 1px solid var(--b2);
+      border-radius: 24px; padding: 10px 16px;
+      color: var(--t1); font-size: 14px;
+      font-family: 'Noto Serif SC', serif;
+      outline: none; transition: border-color .2s;
+    }
+    .chat-inp:focus { border-color: var(--vs); }
+    .chat-inp::placeholder { color: var(--t4); }
+    .chat-send {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--v), var(--r));
+      border: none; color: white; font-size: 16px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: transform .15s;
+    }
+    .chat-send:active { transform: scale(.9); }
+
+    /* ===== HISTORY SCREEN ===== */
+    .hist-month { padding: 8px 20px 6px; font-size: 11px; color: var(--t3); letter-spacing: .1em; }
+    .hist-item {
+      margin: 0 18px 8px;
+      display: flex; align-items: center; gap: 13px;
+      background: var(--s1); border: 1px solid var(--b1);
+      border-radius: var(--rads); padding: 12px 14px;
+      cursor: pointer; transition: background .15s;
+    }
+    .hist-item:active { background: var(--s2); }
+    .hist-date-box {
+      text-align: center; flex-shrink: 0;
+      width: 38px;
+    }
+    .hist-day { font-size: 20px; font-family: 'Playfair Display', serif; line-height: 1; }
+    .hist-mon { font-size: 10px; color: var(--t3); }
+    .hist-cov { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0; }
+    .hist-info { flex: 1; }
+    .hist-sname { font-size: 13px; margin-bottom: 2px; }
+    .hist-meta { font-size: 11px; color: var(--t3); }
+    .hist-mood { font-size: 18px; }
+
+    /* ===== PROFILE ===== */
+    .prof-hero { text-align: center; padding: 58px 24px 24px; }
+    .prof-ring {
+      display: inline-block; padding: 3px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--v), var(--r));
+      margin-bottom: 13px;
+    }
+    .prof-ring-in {
+      width: 84px; height: 84px; border-radius: 50%;
+      background: var(--bg2);
+      display: flex; align-items: center; justify-content: center; font-size: 38px;
+    }
+    .prof-name { font-size: 21px; margin-bottom: 3px; }
+    .prof-room { font-size: 12px; color: var(--t3); }
+
+    .stats-row {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 1px; margin: 0 18px 18px;
+      background: var(--b1); border-radius: var(--rad); overflow: hidden;
+    }
+    .stat-box { background: var(--s1); padding: 14px 6px; text-align: center; }
+    .stat-n { font-size: 22px; font-family: 'Playfair Display', serif; }
+    .stat-l { font-size: 10px; color: var(--t3); margin-top: 2px; }
+
+    /* ===== TOAST ===== */
+    .toast {
+      position: fixed; top: 54px; left: 50%;
+      transform: translateX(-50%) translateY(-18px);
+      background: rgba(124,58,237,.92); backdrop-filter: blur(12px);
+      color: white; padding: 9px 20px; border-radius: 30px;
+      font-size: 13px; z-index: 9999;
+      opacity: 0; transition: all .3s cubic-bezier(.22,1,.36,1);
+      pointer-events: none; white-space: nowrap; max-width: 300px;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ===== LOADING ===== */
+    .loading {
+      position: fixed; inset: 0; background: var(--bg);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 9999; transition: opacity .4s;
+    }
+    .loading.out { opacity: 0; pointer-events: none; }
+    .ld-logo { font-family: 'ZCOOL XiaoWei', serif; font-size: 46px; background: linear-gradient(135deg, var(--vl), var(--rl)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 14px; }
+    .ld-dots { display: flex; gap: 6px; }
+    .ld-dot { width: 7px; height: 7px; border-radius: 50%; animation: dp 1.2s ease-in-out infinite; }
+    .ld-dot:nth-child(1){background:var(--vs)}
+    .ld-dot:nth-child(2){background:linear-gradient(var(--vs),var(--rs));animation-delay:.2s}
+    .ld-dot:nth-child(3){background:var(--rs);animation-delay:.4s}
+    @keyframes dp { 0%,100%{transform:scale(.55);opacity:.35} 50%{transform:scale(1);opacity:1} }
+
+    .divider-line { height: 1px; background: var(--b1); margin: 4px 18px 16px; }
+  </style>
+</head>
+<body>
+
+<div class="glow glow-1"></div>
+<div class="glow glow-2"></div>
+<div class="glow glow-3"></div>
+
+<!-- LOADING -->
+<div class="loading" id="loading">
+  <div class="ld-logo">同频</div>
+  <div class="ld-dots">
+    <div class="ld-dot"></div><div class="ld-dot"></div><div class="ld-dot"></div>
+  </div>
+</div>
+
+<!-- AUTH -->
+<div class="screen" id="screen-auth">
+  <div class="auth-brand">
+    <div class="auth-logo-mark">🎵</div>
+    <div class="auth-logo-name">同频</div>
+    <div class="auth-tagline">A song a day, shared with you</div>
+  </div>
+
+  <div class="tab-switcher">
+    <button class="tab-btn on" onclick="switchTab('login')">登录</button>
+    <button class="tab-btn" onclick="switchTab('register')">注册</button>
+  </div>
+
+  <div class="auth-form" id="form-login">
+    <div class="fld">
+      <label class="fld-label">邮箱</label>
+      <input class="fld-input" id="li-email" type="email" placeholder="your@email.com" autocomplete="email"/>
+    </div>
+    <div class="fld">
+      <label class="fld-label">密码</label>
+      <input class="fld-input" id="li-pass" type="password" placeholder="输入密码" autocomplete="current-password"/>
+    </div>
+    <button class="btn-main" id="btn-login" onclick="doLogin()">登录</button>
+    <div class="divider-or">或者</div>
+    <button class="btn-google" onclick="doGoogle()">
+      <svg class="google-icon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      使用 Google 登录
+    </button>
+    <button class="btn-ghost" onclick="doGuest()">👤 访客体验</button>
+  </div>
+
+  <div class="auth-form" id="form-register" style="display:none">
+    <div class="fld">
+      <label class="fld-label">昵称</label>
+      <input class="fld-input" id="rg-name" type="text" placeholder="给自己起个名字" maxlength="12"/>
+    </div>
+    <div class="fld">
+      <label class="fld-label">邮箱</label>
+      <input class="fld-input" id="rg-email" type="email" placeholder="your@email.com"/>
+    </div>
+    <div class="fld">
+      <label class="fld-label">密码（至少6位）</label>
+      <input class="fld-input" id="rg-pass" type="password" placeholder="设置密码"/>
+    </div>
+    <div class="fld">
+      <label class="fld-label">选一个头像</label>
+      <div class="emoji-picker" id="emoji-picker">
+        <span class="ep-item picked" onclick="pickEmoji(this,'🌙')">🌙</span>
+        <span class="ep-item" onclick="pickEmoji(this,'🌸')">🌸</span>
+        <span class="ep-item" onclick="pickEmoji(this,'🌻')">🌻</span>
+        <span class="ep-item" onclick="pickEmoji(this,'⭐')">⭐</span>
+        <span class="ep-item" onclick="pickEmoji(this,'🍀')">🍀</span>
+        <span class="ep-item" onclick="pickEmoji(this,'🔮')">🔮</span>
+        <span class="ep-item" onclick="pickEmoji(this,'🌊')">🌊</span>
+        <span class="ep-item" onclick="pickEmoji(this,'🦋')">🦋</span>
+        <span class="ep-item" onclick="pickEmoji(this,'🎸')">🎸</span>
+        <span class="ep-item" onclick="pickEmoji(this,'🌈')">🌈</span>
+      </div>
+    </div>
+    <button class="btn-main" id="btn-reg" onclick="doRegister()">创建账号</button>
+    <div class="divider-or">或者</div>
+    <button class="btn-google" onclick="doGoogle()">
+      <svg class="google-icon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      使用 Google 注册
+    </button>
+  </div>
+</div>
+
+<!-- ROOM -->
+<div class="screen" id="screen-room">
+  <div class="room-hero">
+    <div class="room-hero-title">创建你们的<br>专属空间 🔗</div>
+    <div class="room-hero-sub">每个空间最多2人，邀请最想同频的那个人</div>
+  </div>
+  <div class="room-block">
+    <div class="room-block-title">创建新空间</div>
+    <div class="room-block-desc">生成邀请码发给对方，等TA加入</div>
+    <div class="code-box" id="code-box" onclick="copyCode()">——</div>
+    <div class="code-hint">点击复制邀请码</div>
+    <div style="height:12px"></div>
+    <button class="btn-main" id="btn-create" onclick="createRoom()">生成邀请码</button>
+  </div>
+  <div class="room-block">
+    <div class="room-block-title">加入已有空间</div>
+    <div class="room-block-desc">输入对方的邀请码加入TA的空间</div>
+    <input class="fld-input" id="join-inp" type="text" placeholder="输入6位邀请码" maxlength="6"
+      style="text-transform:uppercase;letter-spacing:.18em;font-size:18px;text-align:center;margin-bottom:12px"/>
+    <button class="btn-main" id="btn-join" onclick="joinRoom()">加入空间</button>
+  </div>
+  <button class="btn-ghost" onclick="doSignOut()">退出登录</button>
+</div>
+
+<!-- HOME -->
+<div class="screen padnav" id="screen-home">
+  <div class="pg-header">
+    <div>
+      <div class="pg-title">同频</div>
+      <div class="pg-date" id="home-date"></div>
+    </div>
+    <div class="avatar-pill" onclick="navigate('profile')">
+      <div class="av-circle" id="home-av" style="background:rgba(124,58,237,.2)">🌙</div>
+      <div class="av-name" id="home-uname">我</div>
+    </div>
+  </div>
+
+  <div class="conn-bar" id="conn-bar">
+    <div class="conn-avs">
+      <div class="conn-av" id="cb-me" style="background:rgba(124,58,237,.25)">🌙</div>
+      <div class="conn-av" id="cb-partner" style="background:rgba(225,29,72,.2)">👤</div>
+    </div>
+    <div class="conn-text">
+      <div class="conn-names" id="cb-names">等待对方加入...</div>
+      <div class="conn-status" id="cb-status">还没有伙伴连接</div>
+    </div>
+    <div class="conn-led off" id="conn-led"></div>
+  </div>
+
+  <div class="sec-lbl">我今日分享</div>
+  <div id="my-today">
+    <div class="empty-slot" onclick="navigate('post')">
+      <div class="empty-ico">🎵</div>
+      <div class="empty-txt">今天还没有分享</div>
+      <div class="empty-cta">点击分享今日之歌 →</div>
+    </div>
+  </div>
+
+  <div class="sec-lbl">TA 今日分享</div>
+  <div id="partner-today">
+    <div class="empty-slot">
+      <div class="empty-ico">⏳</div>
+      <div class="empty-txt">等待对方今日分享...</div>
+    </div>
+  </div>
+
+  <div class="sec-lbl">今日心情</div>
+  <div class="mood-row" id="home-moods"></div>
+</div>
+
+<!-- POST -->
+<div class="screen padnav" id="screen-post">
+  <div class="sub-header">
+    <button class="icon-btn" onclick="navigate('home')">←</button>
+    <div class="sub-title">分享今日之歌 🎶</div>
+  </div>
+  <div class="form-blk">
+    <label class="form-lbl">搜索歌曲</label>
+    <input class="form-inp" id="song-search" type="text" placeholder="搜索歌名、歌手..." oninput="doSearch(this.value)"/>
+  </div>
+  <div id="search-res"></div>
+  <div class="form-blk">
+    <label class="form-lbl">已选歌曲</label>
+    <div id="sel-song" class="sel-box" style="color:var(--t3);font-size:13px">还没选歌哦 ♪</div>
+  </div>
+  <div class="form-blk"><label class="form-lbl">今日心情</label></div>
+  <div class="mood-btns" id="post-moods"></div>
+  <div class="form-blk">
+    <label class="form-lbl">想说的话（可选）</label>
+    <textarea class="form-inp" id="post-note" placeholder="今天是什么让你想起了这首歌..."></textarea>
+  </div>
+  <div style="margin:0 18px 30px">
+    <button class="btn-main" onclick="submitPost()">分享给TA 💌</button>
+  </div>
+</div>
+
+<!-- FEED -->
+<div class="screen padnav" id="screen-feed">
+  <div class="pg-header">
+    <div><div class="pg-title">共鸣</div><div class="pg-date">你们共同的乐单</div></div>
+  </div>
+  <div id="feed-list"><div style="text-align:center;color:var(--t3);padding:40px;font-size:13px">加载中...</div></div>
+</div>
+
+<!-- CHAT -->
+<div class="screen" id="screen-chat">
+  <div class="chat-header">
+    <button class="icon-btn" onclick="navigate('home')">←</button>
+    <div class="chat-partner-info">
+      <div class="chat-partner-name" id="chat-partner-name">TA</div>
+      <div class="chat-partner-status" id="chat-status">在线</div>
+    </div>
+  </div>
+  <div class="chat-messages" id="chat-msgs">
+    <div style="text-align:center;color:var(--t3);font-size:12px;padding:20px">开始聊天吧 💬</div>
+  </div>
+  <div class="chat-input-bar">
+    <input class="chat-inp" id="chat-inp" type="text" placeholder="说点什么..." onkeydown="if(event.key==='Enter')sendMsg()"/>
+    <button class="chat-send" onclick="sendMsg()">↑</button>
+  </div>
+</div>
+
+<!-- HISTORY -->
+<div class="screen padnav" id="screen-history">
+  <div class="pg-header">
+    <div><div class="pg-title">回忆</div><div class="pg-date">每一天的故事</div></div>
+  </div>
+  <div id="hist-list"><div style="text-align:center;color:var(--t3);padding:40px;font-size:13px">还没有记录</div></div>
+</div>
+
+<!-- PROFILE -->
+<div class="screen padnav" id="screen-profile">
+  <div class="prof-hero">
+    <div class="prof-ring"><div class="prof-ring-in" id="prof-emoji">🌙</div></div>
+    <div class="prof-name" id="prof-name">用户名</div>
+    <div class="prof-room" id="prof-room">房间码：——</div>
+  </div>
+  <div class="stats-row">
+    <div class="stat-box"><div class="stat-n" id="ps-songs">0</div><div class="stat-l">分享歌曲</div></div>
+    <div class="stat-box"><div class="stat-n" id="ps-days">0</div><div class="stat-l">共同天数</div></div>
+    <div class="stat-box"><div class="stat-n" id="ps-streak">0</div><div class="stat-l">连续打卡</div></div>
+  </div>
+  <div class="sec-lbl">最近分享</div>
+  <div id="prof-hist"></div>
+  <div style="margin:18px;display:flex;gap:10px">
+    <button class="btn-main" style="flex:1;padding:12px;font-size:13px" onclick="copyInvite()">🔗 邀请好友</button>
+    <button class="btn-ghost" style="width:50px;padding:12px" onclick="doSignOut()">↩</button>
+  </div>
+</div>
+
+<!-- BOT NAV -->
+<nav class="bot-nav" id="bot-nav" style="display:none">
+  <button class="nav-btn on" id="nav-home" onclick="navigate('home')">
+    <span class="nav-ico">🏠</span><span>主页</span>
+  </button>
+  <button class="nav-btn" id="nav-feed" onclick="navigate('feed')">
+    <span class="nav-ico">💞</span><span>共鸣</span>
+  </button>
+  <button class="nav-btn center-btn" id="nav-post" onclick="navigate('post')">
+    <span class="nav-ico">＋</span><span>分享</span>
+  </button>
+  <button class="nav-btn" id="nav-chat" onclick="navigate('chat')">
+    <span class="nav-ico-wrap"><span class="nav-ico">💬</span><span class="nav-badge" id="chat-badge" style="display:none"></span></span>
+    <span>聊天</span>
+  </button>
+  <button class="nav-btn" id="nav-history" onclick="navigate('history')">
+    <span class="nav-ico">📅</span><span>回忆</span>
+  </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<!-- FIREBASE -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInAnonymously, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, addDoc, collection, query, orderBy, onSnapshot, updateDoc, arrayUnion, arrayRemove, increment, serverTimestamp, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDeUsfrvAa0ABvibU0vcecraYKB9gAWka4",
+  authDomain: "tongpin.firebaseapp.com",
+  projectId: "tongpin",
+  storageBucket: "tongpin.firebasestorage.app",
+  messagingSenderId: "328815005862",
+  appId: "1:328815005862:web:a29605cf754557553fa467"
+};
+
+const configured = !firebaseConfig.apiKey.includes('YOUR_');
+window._cfg = configured;
+
+if (!configured) {
+  hideLoading();
+  initDemo();
+} else {
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  window._auth = auth;
+  window._db = db;
+  window._fb = { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInAnonymously, GoogleAuthProvider, signInWithPopup, updateProfile, signOut, doc, setDoc, getDoc, addDoc, collection, query, orderBy, onSnapshot, updateDoc, arrayUnion, arrayRemove, increment, serverTimestamp, limit };
+
+  onAuthStateChanged(auth, async user => {
+    hideLoading();
+    if (user) {
+      await loadMe(user);
+    } else {
+      showScreen('auth'); hideNav();
+    }
+  });
+}
+
+window.loadMe = async function(user) {
+  try {
+    const snap = await window._fb.getDoc(window._fb.doc(window._db,'users',user.uid));
+    window._me = snap.exists() ? {uid:user.uid,...snap.data()} : {uid:user.uid,name:user.displayName||'用户',emoji:'🌙',roomId:null};
+    if (window._me.roomId) enterRoom(window._me.roomId);
+    else { showScreen('room'); hideNav(); }
+  } catch(e) { showScreen('auth'); hideNav(); }
+};
+
+window.enterRoom = function(roomId) {
+  window._rid = roomId;
+  showScreen('home'); showNav();
+  updateHomeUI();
+  listenRoom(roomId);
+  listenFeed(roomId);
+  listenChat(roomId);
+};
+
+window.listenRoom = function(rid) {
+  const {doc,onSnapshot,getDoc} = window._fb, db=window._db;
+  onSnapshot(doc(db,'rooms',rid), async snap => {
+    if(!snap.exists()) return;
+    const members = snap.data().members||[];
+    const pid = members.find(id=>id!==window._me.uid);
+    if(pid) {
+      const ps = await getDoc(doc(db,'users',pid));
+      if(ps.exists()) { window._partner={uid:pid,...ps.data()}; updateConnBar(true); loadPartnerToday(); }
+    } else { window._partner=null; updateConnBar(false); }
+  });
+};
+
+window.listenFeed = function(rid) {
+  const {collection,query,orderBy,onSnapshot,limit} = window._fb, db=window._db;
+  const q = query(collection(db,'rooms',rid,'posts'),orderBy('createdAt','desc'),limit(60));
+  onSnapshot(q, snap => {
+    window._posts = snap.docs.map(d=>({id:d.id,...d.data()}));
+    if(window._cur==='feed') renderFeed();
+    updateProfStats();
+    if(window._cur==='history') renderHistory();
+  });
+};
+
+window.listenChat = function(rid) {
+  const {collection,query,orderBy,onSnapshot} = window._fb, db=window._db;
+  const q = query(collection(db,'rooms',rid,'chat'),orderBy('at','asc'));
+  onSnapshot(q, snap => {
+    window._msgs = snap.docs.map(d=>({id:d.id,...d.data()}));
+    if(window._cur==='chat') renderChat();
+    else {
+      const unread = window._msgs.filter(m=>m.uid!==window._me?.uid && !m.read);
+      document.getElementById('chat-badge').style.display = unread.length>0?'block':'none';
+    }
+  });
+};
+
+window.loadPartnerToday = async function() {
+  if(!window._partner) return;
+  const today = td();
+  const snap = await window._fb.getDoc(window._fb.doc(window._db,'rooms',window._rid,'daily',`${window._partner.uid}_${today}`));
+  if(snap.exists()) renderPartnerCard(snap.data());
+};
+
+window.doGoogle = async function() {
+  if(!window._auth) return toast('演示模式不支持 Google 登录');
+  try {
+    const provider = new window._fb.GoogleAuthProvider();
+    const cred = await window._fb.signInWithPopup(window._auth, provider);
+    const user = cred.user;
+    const snap = await window._fb.getDoc(window._fb.doc(window._db,'users',user.uid));
+    if(!snap.exists()) {
+      await window._fb.setDoc(window._fb.doc(window._db,'users',user.uid),{
+        name: user.displayName||'Google用户', emoji:'🌙', email:user.email, createdAt:window._fb.serverTimestamp()
+      });
+    }
+  } catch(e) { toast('Google 登录失败：'+e.message); }
+};
+</script>
+
+<script>
+// ===== SONG DATABASE (100+ songs) =====
+const SONGS = [
+  // 周杰伦
+  {n:'晴天',a:'周杰伦',e:'🌤',c:'#fbbf24'},{n:'稻香',a:'周杰伦',e:'🌾',c:'#86efac'},
+  {n:'夜曲',a:'周杰伦',e:'🌙',c:'#818cf8'},{n:'七里香',a:'周杰伦',e:'🌿',c:'#34d399'},
+  {n:'告白气球',a:'周杰伦',e:'🎈',c:'#fb7185'},{n:'爱在西元前',a:'周杰伦',e:'🏛',c:'#fde68a'},
+  {n:'青花瓷',a:'周杰伦',e:'🏺',c:'#93c5fd'},{n:'烟花易冷',a:'周杰伦',e:'🎆',c:'#c4b5fd'},
+  {n:'说好不哭',a:'周杰伦',e:'😢',c:'#60a5fa'},{n:'不能说的秘密',a:'周杰伦',e:'🤫',c:'#a78bfa'},
+  {n:'彩虹',a:'周杰伦',e:'🌈',c:'#f9a8d4'},{n:'简单爱',a:'周杰伦',e:'💕',c:'#fda4af'},
+  // 华语
+  {n:'平凡之路',a:'朴树',e:'🛤',c:'#a78bfa'},{n:'南山南',a:'马頔',e:'🏔',c:'#60a5fa'},
+  {n:'成都',a:'赵雷',e:'🏙',c:'#f59e0b'},{n:'我记得',a:'赵雷',e:'💭',c:'#c084fc'},
+  {n:'后来',a:'刘若英',e:'🕯',c:'#fdba74'},{n:'红豆',a:'王菲',e:'❤️',c:'#ef4444'},
+  {n:'海阔天空',a:'Beyond',e:'🌊',c:'#38bdf8'},{n:'浮夸',a:'陈奕迅',e:'✨',c:'#e879f9'},
+  {n:'漠河舞厅',a:'柳爽',e:'🕺',c:'#93c5fd'},{n:'消愁',a:'毛不易',e:'🍺',c:'#d4a373'},
+  {n:'起风了',a:'买辣椒也用券',e:'🍃',c:'#86efac'},{n:'盗将行',a:'花粥',e:'🌺',c:'#f9a8d4'},
+  {n:'霓虹甜心',a:'告五人',e:'💜',c:'#c084fc'},{n:'体面',a:'于文文',e:'🌈',c:'#6ee7b7'},
+  {n:'我曾',a:'隔壁老樊',e:'🎸',c:'#fbbf24'},{n:'可惜没如果',a:'林俊杰',e:'🍂',c:'#f97316'},
+  {n:'修炼爱情',a:'林俊杰',e:'🌹',c:'#f43f5e'},{n:'不为谁而作的歌',a:'林俊杰',e:'🎵',c:'#a78bfa'},
+  {n:'江南',a:'林俊杰',e:'🌿',c:'#34d399'},{n:'曹操',a:'林俊杰',e:'⚔️',c:'#fbbf24'},
+  {n:'爱我别走',a:'张震岳',e:'🏃',c:'#fb923c'},{n:'思念是一种病',a:'张震岳',e:'🤒',c:'#818cf8'},
+  {n:'新不了情',a:'万芳',e:'💌',c:'#fda4af'},{n:'领悟',a:'辛晓琪',e:'💡',c:'#fbbf24'},
+  {n:'遇见',a:'萧亚轩',e:'🌟',c:'#fde68a'},{n:'爱情转移',a:'陈奕迅',e:'🔄',c:'#93c5fd'},
+  {n:'十年',a:'陈奕迅',e:'🗓',c:'#c084fc'},{n:'富士山下',a:'陈奕迅',e:'🗻',c:'#e0f2fe'},
+  {n:'白月光与朱砂痣',a:'大王',e:'🌕',c:'#fde68a'},{n:'清空',a:'张碧晨',e:'🫧',c:'#bfdbfe'},
+  {n:'可能否',a:'鹿先森乐队',e:'🦌',c:'#bbf7d0'},{n:'安和桥',a:'宋冬野',e:'🌉',c:'#818cf8'},
+  {n:'董小姐',a:'宋冬野',e:'👒',c:'#fdba74'},{n:'斑马斑马',a:'宋冬野',e:'🦓',c:'#e5e7eb'},
+  {n:'理想三旬',a:'陈鸿宇',e:'🍷',c:'#9f1239'},{n:'湖心',a:'陈鸿宇',e:'🌊',c:'#0ea5e9'},
+  {n:'追光者',a:'岑宁儿',e:'💡',c:'#fde68a'},{n:'存在',a:'汪峰',e:'🌅',c:'#fb923c'},
+  {n:'像我这样的人',a:'毛不易',e:'🚶',c:'#a78bfa'},{n:'入海',a:'鹿晗',e:'🌊',c:'#38bdf8'},
+  {n:'光年之外',a:'G.E.M.',e:'⭐',c:'#fde68a'},{n:'泡沫',a:'G.E.M.',e:'🫧',c:'#bfdbfe'},
+  // 日韩
+  {n:'花は咲く',a:'花は咲くプロジェクト',e:'🌸',c:'#fda4af'},{n:'夜に駆ける',a:'YOASOBI',e:'🌙',c:'#818cf8'},
+  {n:'アイドル',a:'YOASOBI',e:'⭐',c:'#fde68a'},{n:'Dynamite',a:'BTS',e:'💥',c:'#fbbf24'},
+  {n:'Love Scenario',a:'iKON',e:'💝',c:'#fda4af'},
+  // 欧美
+  {n:'Shape of You',a:'Ed Sheeran',e:'💃',c:'#f9a8d4'},{n:'Perfect',a:'Ed Sheeran',e:'💑',c:'#fda4af'},
+  {n:'Blinding Lights',a:'The Weeknd',e:'💡',c:'#fca5a5'},{n:'Starboy',a:'The Weeknd',e:'⭐',c:'#fde68a'},
+  {n:'Lover',a:'Taylor Swift',e:'💗',c:'#f9a8d4'},{n:'Love Story',a:'Taylor Swift',e:'📖',c:'#fde68a'},
+  {n:'Someone Like You',a:'Adele',e:'🌧',c:'#93c5fd'},{n:'Hello',a:'Adele',e:'📞',c:'#818cf8'},
+  {n:'Let Her Go',a:'Passenger',e:'🚂',c:'#fed7aa'},{n:'Counting Stars',a:'OneRepublic',e:'⭐',c:'#fde68a'},
+  {n:'Demons',a:'Imagine Dragons',e:'👹',c:'#dc2626'},{n:'Believer',a:'Imagine Dragons',e:'💪',c:'#f97316'},
+  {n:'Happier',a:'Marshmello',e:'😊',c:'#fbbf24'},{n:'Faded',a:'Alan Walker',e:'🌫',c:'#93c5fd'},
+  {n:'Alone',a:'Alan Walker',e:'🚶',c:'#818cf8'},{n:'Stay',a:'Justin Bieber',e:'🙏',c:'#a78bfa'},
+  {n:'Peaches',a:'Justin Bieber',e:'🍑',c:'#fb923c'},{n:'positions',a:'Ariana Grande',e:'💜',c:'#c084fc'},
+  {n:'thank u, next',a:'Ariana Grande',e:'💋',c:'#fda4af'},{n:'Bad Guy',a:'Billie Eilish',e:'😈',c:'#4ade80'},
+  {n:'Ocean Eyes',a:'Billie Eilish',e:'🌊',c:'#38bdf8'},{n:'Sunflower',a:'Post Malone',e:'🌻',c:'#fbbf24'},
+  {n:'Circles',a:'Post Malone',e:'⭕',c:'#a78bfa'},{n:'Levitating',a:'Dua Lipa',e:'✨',c:'#c084fc'},
+  {n:'New Rules',a:'Dua Lipa',e:'📏',c:'#38bdf8'},
+];
+
+const MOODS = [
+  {e:'🌸',t:'平静'},{e:'🌤',t:'愉悦'},{e:'🌙',t:'思念'},{e:'🔥',t:'兴奋'},
+  {e:'🌧',t:'低落'},{e:'💫',t:'感动'},{e:'🌈',t:'治愈'},{e:'☕',t:'慵懒'},
+  {e:'💪',t:'元气'},{e:'🌊',t:'自由'},{e:'🎭',t:'复杂'},{e:'🍂',t:'伤感'}
+];
+
+// STATE
+window._me = null;
+window._partner = null;
+window._rid = null;
+window._posts = [];
+window._msgs = [];
+window._cur = 'loading';
+window._selSong = null;
+window._selMood = MOODS[1];
+window._selEmoji = '🌙';
+
+// DEMO MODE
+function initDemo() {
+  window._me = {uid:'demo',name:'演示用户',emoji:'🌙',roomId:'demo'};
+  window._partner = {uid:'p',name:'小太阳',emoji:'🌻'};
+  window._rid = 'demo';
+  window._posts = [
+    {id:'1',userId:'p',userName:'小太阳',userEmoji:'🌻',song:{n:'晴天',a:'周杰伦',e:'🌤',c:'#fbbf24'},mood:{e:'☀️',t:'愉悦'},note:'今天天气真好~',likes:3,likedBy:[],createdAt:{toDate:()=>new Date()}},
+    {id:'2',userId:'demo',userName:'演示用户',userEmoji:'🌙',song:{n:'南山南',a:'马頔',e:'🏔',c:'#60a5fa'},mood:{e:'🌙',t:'思念'},note:'有些人总会突然想起',likes:5,likedBy:['demo'],createdAt:{toDate:()=>new Date(Date.now()-86400000)}},
+    {id:'3',userId:'p',userName:'小太阳',userEmoji:'🌻',song:{n:'起风了',a:'买辣椒也用券',e:'🍃',c:'#86efac'},mood:{e:'🌸',t:'平静'},note:'',likes:2,likedBy:[],createdAt:{toDate:()=>new Date(Date.now()-172800000)}},
+  ];
+  window._msgs = [
+    {id:'m1',uid:'p',name:'小太阳',text:'今天你听了什么歌？',at:{toDate:()=>new Date(Date.now()-3600000)}},
+    {id:'m2',uid:'demo',name:'演示用户',text:'南山南，你呢？',at:{toDate:()=>new Date(Date.now()-3000000)}},
+    {id:'m3',uid:'p',name:'小太阳',text:'我在听晴天 🌤 好治愈',at:{toDate:()=>new Date(Date.now()-1800000)}},
+  ];
+  showScreen('home'); showNav(); updateHomeUI(); updateConnBar(true);
+  renderPartnerCard({song:{n:'晴天',a:'周杰伦',e:'🌤',c:'#fbbf24'},mood:{e:'☀️',t:'愉悦'},note:'今天天气真好~',userName:'小太阳',userEmoji:'🌻'});
+  toast('演示模式 · 配置 Firebase 后可真实使用');
+}
+
+// UTILS
+function td() { return new Date().toISOString().slice(0,10); }
+function ago(d) {
+  if(!d) return '';
+  const dt = d.toDate?d.toDate():new Date(d);
+  const diff = Date.now()-dt.getTime();
+  if(diff<60000) return '刚刚';
+  if(diff<3600000) return Math.floor(diff/60000)+'分钟前';
+  if(diff<86400000) return `今天 ${dt.getHours().toString().padStart(2,'0')}:${dt.getMinutes().toString().padStart(2,'0')}`;
+  if(diff<172800000) return '昨天';
+  return `${dt.getMonth()+1}/${dt.getDate()}`;
+}
+
+function toast(msg,dur=2500) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),dur);
+}
+function hideLoading() {
+  const l=document.getElementById('loading');
+  l.classList.add('out');
+  setTimeout(()=>l.style.display='none',400);
+}
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  window._cur=name;
+}
+function showNav(){document.getElementById('bot-nav').style.display='flex';}
+function hideNav(){document.getElementById('bot-nav').style.display='none';}
+
+window.navigate = function(name) {
+  showScreen(name);
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('on'));
+  const nb=document.getElementById('nav-'+name);
+  if(nb) nb.classList.add('on');
+  if(name==='feed') renderFeed();
+  if(name==='profile') renderProfile();
+  if(name==='chat') { renderChat(); document.getElementById('chat-badge').style.display='none'; }
+  if(name==='history') renderHistory();
+};
+
+// AUTH
+window.switchTab = function(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('on',(i===0)===(tab==='login')));
+  document.getElementById('form-login').style.display=tab==='login'?'flex':'none';
+  document.getElementById('form-register').style.display=tab==='register'?'flex':'none';
+};
+
+window.pickEmoji = function(el,emoji) {
+  document.querySelectorAll('.ep-item').forEach(e=>e.classList.remove('picked'));
+  el.classList.add('picked');
+  window._selEmoji=emoji;
+};
+
+window.doLogin = async function() {
+  if(!window._auth) return toast('请先配置 Firebase');
+  const email=document.getElementById('li-email').value.trim();
+  const pass=document.getElementById('li-pass').value;
+  if(!email||!pass) return toast('请填写邮箱和密码');
+  const btn=document.getElementById('btn-login');
+  btn.disabled=true; btn.textContent='登录中...';
+  try {
+    await window._fb.signInWithEmailAndPassword(window._auth,email,pass);
+  } catch(e) {
+    toast(e.code==='auth/wrong-password'?'密码错误':e.code==='auth/user-not-found'?'用户不存在':'登录失败');
+    btn.disabled=false; btn.textContent='登录';
+  }
+};
+
+window.doRegister = async function() {
+  if(!window._auth) return toast('请先配置 Firebase');
+  const name=document.getElementById('rg-name').value.trim();
+  const email=document.getElementById('rg-email').value.trim();
+  const pass=document.getElementById('rg-pass').value;
+  if(!name||!email||!pass) return toast('请填写所有信息');
+  if(pass.length<6) return toast('密码至少6位');
+  const btn=document.getElementById('btn-reg');
+  btn.disabled=true; btn.textContent='创建中...';
+  try {
+    const cred=await window._fb.createUserWithEmailAndPassword(window._auth,email,pass);
+    await window._fb.updateProfile(cred.user,{displayName:name});
+    await window._fb.setDoc(window._fb.doc(window._db,'users',cred.user.uid),{
+      name,emoji:window._selEmoji,email,createdAt:window._fb.serverTimestamp()
+    });
+  } catch(e) {
+    toast(e.code==='auth/email-already-in-use'?'邮箱已注册':'注册失败');
+    btn.disabled=false; btn.textContent='创建账号';
+  }
+};
+
+window.doGuest = async function() {
+  if(!window._auth) return initDemo();
+  try {
+    const cred=await window._fb.signInAnonymously(window._auth);
+    await window._fb.setDoc(window._fb.doc(window._db,'users',cred.user.uid),{
+      name:'匿名旅人',emoji:'🌙',createdAt:window._fb.serverTimestamp()
+    });
+  } catch(e){ toast('访客登录失败'); }
+};
+
+window.doSignOut = async function() {
+  if(window._auth) await window._fb.signOut(window._auth);
+  window._me=null; window._partner=null; window._rid=null;
+  showScreen('auth'); hideNav();
+};
+
+// ROOM
+window.createRoom = async function() {
+  if(!window._db) return toast('演示模式不支持此操作');
+  const code=Math.random().toString(36).slice(2,8).toUpperCase();
+  const btn=document.getElementById('btn-create');
+  btn.disabled=true; btn.textContent='生成中...';
+  try {
+    const {doc,setDoc,updateDoc,serverTimestamp}=window._fb, db=window._db;
+    await setDoc(doc(db,'rooms',code),{code,members:[window._me.uid],createdAt:serverTimestamp()});
+    await updateDoc(doc(db,'users',window._me.uid),{roomId:code});
+    window._me.roomId=code;
+    document.getElementById('code-box').textContent=code;
+    toast('邀请码已生成！复制发给TA 💌');
+    btn.disabled=false; btn.textContent='生成邀请码';
+    window._rid=code;
+    setTimeout(()=>enterRoom(code),800);
+  } catch(e){ toast('创建失败'); btn.disabled=false; btn.textContent='生成邀请码'; }
+};
+
+window.joinRoom = async function() {
+  if(!window._db) return toast('演示模式不支持此操作');
+  const code=document.getElementById('join-inp').value.trim().toUpperCase();
+  if(code.length!==6) return toast('请输入6位邀请码');
+  const btn=document.getElementById('btn-join');
+  btn.disabled=true; btn.textContent='加入中...';
+  try {
+    const {doc,getDoc,updateDoc}=window._fb, db=window._db;
+    const snap=await getDoc(doc(db,'rooms',code));
+    if(!snap.exists()){ toast('房间不存在'); btn.disabled=false; btn.textContent='加入空间'; return; }
+    const members=snap.data().members||[];
+    if(members.length>=2&&!members.includes(window._me.uid)){ toast('空间已满'); btn.disabled=false; btn.textContent='加入空间'; return; }
+    await updateDoc(doc(db,'rooms',code),{members:[...new Set([...members,window._me.uid])]});
+    await updateDoc(doc(db,'users',window._me.uid),{roomId:code});
+    window._me.roomId=code;
+    toast('加入成功！');
+    enterRoom(code);
+  } catch(e){ toast('加入失败：'+e.message); btn.disabled=false; btn.textContent='加入空间'; }
+};
+
+window.copyCode = function() {
+  const c=document.getElementById('code-box').textContent;
+  if(c==='——') return toast('请先创建空间');
+  navigator.clipboard?.writeText(c).then(()=>toast('邀请码已复制 💌'));
+};
+window.copyInvite = function() {
+  const c=window._rid||window._me?.roomId;
+  if(!c) return toast('还没有加入空间');
+  navigator.clipboard?.writeText(c).then(()=>toast('邀请码已复制！'));
+};
+
+// HOME
+function updateHomeUI() {
+  if(!window._me) return;
+  const d=new Date();
+  const days=['周日','周一','周二','周三','周四','周五','周六'];
+  document.getElementById('home-date').textContent=`${d.getMonth()+1}月${d.getDate()}日 ${days[d.getDay()]}`;
+  document.getElementById('home-av').textContent=window._me.emoji||'🌙';
+  document.getElementById('home-uname').textContent=window._me.name||'我';
+  document.getElementById('cb-me').textContent=window._me.emoji||'🌙';
+  renderMoodChips();
+  loadMyToday();
+}
+
+function renderMoodChips() {
+  const c=document.getElementById('home-moods');
+  c.innerHTML=MOODS.map((m,i)=>`<div class="mood-chip${i===1?' on':''}">${m.e} ${m.t}</div>`).join('');
+  c.querySelectorAll('.mood-chip').forEach(ch=>ch.addEventListener('click',function(){
+    c.querySelectorAll('.mood-chip').forEach(x=>x.classList.remove('on'));
+    this.classList.add('on');
+  }));
+}
+
+async function loadMyToday() {
+  if(!window._me||!window._rid||!window._db) return;
+  const snap=await window._fb.getDoc(window._fb.doc(window._db,'rooms',window._rid,'daily',`${window._me.uid}_${td()}`));
+  if(snap.exists()) renderMyCard(snap.data());
+}
+
+function renderMyCard(d) {
+  const {song,mood,note}=d;
+  document.getElementById('my-today').innerHTML=`
+    <div class="song-card">
+      <div class="card-top" style="background:linear-gradient(135deg,${song.c}1a,${song.c}0d)">
+        <div class="card-by">
+          <div class="card-av" style="background:${song.c}33">${window._me?.emoji||'🌙'}</div>
+          <div class="card-by-name">${window._me?.name||'我'}</div>
+          <div class="card-by-time">今天</div>
+        </div>
+        <div class="song-row">
+          <div class="disc spin" style="background:radial-gradient(circle,${song.c}99,${song.c}44)">${song.e}</div>
+          <div><div class="song-name">${song.n}</div><div class="song-art">${song.a}</div><div class="song-mood-tag">${mood.e} ${mood.t}</div></div>
+        </div>
+      </div>
+      ${note?`<div class="card-note">"${note}"</div>`:''}
+    </div>`;
+}
+
+function renderPartnerCard(d) {
+  const {song,mood,note,userName,userEmoji}=d;
+  document.getElementById('partner-today').innerHTML=`
+    <div class="song-card">
+      <div class="card-top" style="background:linear-gradient(135deg,${song.c}1a,${song.c}0d)">
+        <div class="card-by">
+          <div class="card-av" style="background:${song.c}33">${userEmoji||window._partner?.emoji||'🌻'}</div>
+          <div class="card-by-name">${userName||window._partner?.name||'TA'}</div>
+          <div class="card-by-time">今天</div>
+        </div>
+        <div class="song-row">
+          <div class="disc" style="background:radial-gradient(circle,${song.c}99,${song.c}44)">${song.e}</div>
+          <div><div class="song-name">${song.n}</div><div class="song-art">${song.a}</div><div class="song-mood-tag">${mood.e} ${mood.t}</div></div>
+        </div>
+      </div>
+      ${note?`<div class="card-note">"${note}"</div>`:''}
+    </div>`;
+}
+
+function updateConnBar(on) {
+  if(!window._partner) return;
+  document.getElementById('cb-partner').textContent=window._partner.emoji||'👤';
+  document.getElementById('cb-names').textContent=`${window._me?.name||'我'} & ${window._partner.name}`;
+  document.getElementById('cb-status').textContent=on?'已连接 · 实时同步':'等待对方加入...';
+  document.getElementById('chat-partner-name').textContent=window._partner.name||'TA';
+  document.getElementById('conn-led').classList.toggle('off',!on);
+}
+
+// POST
+window.doSearch = function(val) {
+  const c=document.getElementById('search-res');
+  if(!val.trim()){c.innerHTML='';return;}
+  const res=SONGS.filter(s=>s.n.includes(val)||s.a.includes(val)||s.n.toLowerCase().includes(val.toLowerCase())||s.a.toLowerCase().includes(val.toLowerCase())).slice(0,7);
+  if(!res.length){c.innerHTML=`<div style="text-align:center;color:var(--t3);padding:14px;font-size:12px">没找到"${val}"</div>`;return;}
+  c.innerHTML=`<div class="results-box">`+res.map(s=>`<div class="res-row" onclick='pickSong(${JSON.stringify(s)})'><div class="res-ico" style="background:linear-gradient(135deg,${s.c}99,${s.c}44)">${s.e}</div><div><div class="res-name">${s.n}</div><div class="res-art">${s.a}</div></div></div>`).join('')+'</div>';
+};
+
+window.pickSong = function(song) {
+  window._selSong=song;
+  document.getElementById('search-res').innerHTML='';
+  document.getElementById('song-search').value='';
+  document.getElementById('sel-song').innerHTML=`<div style="display:flex;align-items:center;gap:11px"><div style="width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,${song.c}99,${song.c}44);display:flex;align-items:center;justify-content:center;font-size:21px">${song.e}</div><div><div style="font-size:14px">${song.n}</div><div style="font-size:11px;color:var(--t3)">${song.a}</div></div></div>`;
+  toast(`已选《${song.n}》`);
+};
+
+function renderMoodBtns() {
+  document.getElementById('post-moods').innerHTML=MOODS.map((m,i)=>`<button class="m-btn${i===1?' on':''}" onclick="pickMood(this,'${m.e}','${m.t}')">${m.e}</button>`).join('');
+}
+
+window.pickMood = function(el,e,t) {
+  document.querySelectorAll('.m-btn').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  window._selMood={e,t};
+};
+
+window.submitPost = async function() {
+  if(!window._selSong) return toast('请先选择一首歌 🎵');
+  const note=document.getElementById('post-note').value.trim();
+  const data={
+    userId:window._me.uid, userName:window._me.name, userEmoji:window._me.emoji,
+    song:window._selSong, mood:window._selMood, note,
+    createdAt:window._db?window._fb.serverTimestamp():new Date().toISOString(),
+    likes:0, likedBy:[]
+  };
+  try {
+    if(window._db) {
+      const {doc,setDoc,addDoc,collection}=window._fb,db=window._db;
+      await setDoc(doc(db,'rooms',window._rid,'daily',`${window._me.uid}_${td()}`),data);
+      await addDoc(collection(db,'rooms',window._rid,'posts'),data);
+    } else {
+      window._posts.unshift({id:Date.now()+'', ...data, createdAt:{toDate:()=>new Date()}});
+    }
+    renderMyCard(data);
+    toast('分享成功！💌');
+    document.getElementById('post-note').value='';
+    window._selSong=null;
+    document.getElementById('sel-song').innerHTML='还没选歌哦 ♪';
+    document.getElementById('sel-song').style.color='var(--t3)';
+    navigate('home');
+  } catch(e){ toast('发布失败：'+e.message); }
+};
+
+// FEED
+function renderFeed() {
+  const list=document.getElementById('feed-list');
+  if(!window._posts?.length){list.innerHTML='<div style="text-align:center;color:var(--t3);padding:40px;font-size:13px">还没有分享记录<br>快去分享第一首歌吧 🎵</div>';return;}
+  list.innerHTML=window._posts.map((p,i)=>{
+    const liked=p.likedBy?.includes(window._me?.uid);
+    return `<div class="feed-item" style="animation-delay:${i*.04}s">
+      <div class="fi-top">
+        <div class="fi-av" style="background:${p.song?.c||'#888'}33">${p.userEmoji||'🎵'}</div>
+        <div><div class="fi-name">${p.userName||'用户'}</div><div class="fi-time">${ago(p.createdAt)}</div></div>
+      </div>
+      <div class="fi-song">
+        <div class="fi-cov" style="background:linear-gradient(135deg,${p.song?.c||'#888'}88,${p.song?.c||'#888'}44)">${p.song?.e||'🎵'}</div>
+        <div><div class="fi-sname">${p.song?.n||'未知'}</div><div class="fi-sart">${p.song?.a||''}</div></div>
+      </div>
+      ${p.note?`<div class="fi-note">"${p.note}"</div>`:''}
+      <div class="fi-foot">
+        <div class="fi-badge">${p.mood?.e||''} ${p.mood?.t||''}</div>
+        <button class="fi-like${liked?' liked':''}" onclick="doLike('${p.id}',${liked})">${liked?'❤️':'🤍'} ${p.likes||0}</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.doLike = async function(pid,liked) {
+  const p=window._posts.find(x=>x.id===pid); if(!p) return;
+  const nl=!liked;
+  p.likes=(p.likes||0)+(nl?1:-1);
+  if(nl) p.likedBy=[...(p.likedBy||[]),window._me.uid];
+  else p.likedBy=(p.likedBy||[]).filter(id=>id!==window._me.uid);
+  renderFeed();
+  if(window._db){
+    const {doc,updateDoc,arrayUnion,arrayRemove,increment}=window._fb;
+    await updateDoc(window._fb.doc(window._db,'rooms',window._rid,'posts',pid),{
+      likes:increment(nl?1:-1),
+      likedBy:nl?arrayUnion(window._me.uid):arrayRemove(window._me.uid)
+    }).catch(()=>{});
+  }
+};
+
+// CHAT
+function renderChat() {
+  if(!window._partner) {
+    document.getElementById('chat-msgs').innerHTML='<div style="text-align:center;color:var(--t3);padding:60px 20px;font-size:13px">还没有伙伴，先去邀请TA吧 🔗</div>';
+    return;
+  }
+  const msgs=window._msgs||[];
+  document.getElementById('chat-msgs').innerHTML=msgs.length?msgs.map(m=>{
+    const mine=m.uid===window._me?.uid;
+    return `<div class="msg-bubble ${mine?'mine':'theirs'}">${m.text}<div class="msg-time${mine?' r':''}">${ago(m.at)}</div></div>`;
+  }).join(''):'<div style="text-align:center;color:var(--t3);font-size:12px;padding:30px">开始聊天吧 💬</div>';
+  setTimeout(()=>{const c=document.getElementById('chat-msgs');c.scrollTop=c.scrollHeight;},100);
+}
+
+window.sendMsg = async function() {
+  const inp=document.getElementById('chat-inp');
+  const text=inp.value.trim(); if(!text) return;
+  inp.value='';
+  const msg={uid:window._me.uid,name:window._me.name,text,at:new Date().toISOString(),read:false};
+  if(window._db){
+    const {addDoc,collection,serverTimestamp}=window._fb;
+    await addDoc(window._fb.collection(window._db,'rooms',window._rid,'chat'),{...msg,at:serverTimestamp()}).catch(()=>{});
+  } else {
+    window._msgs.push({id:Date.now()+'', ...msg, at:{toDate:()=>new Date()}});
+    renderChat();
+  }
+};
+
+// HISTORY
+function renderHistory() {
+  const list=document.getElementById('hist-list');
+  const myPosts=(window._posts||[]).filter(p=>p.userId===window._me?.uid);
+  if(!myPosts.length){list.innerHTML='<div style="text-align:center;color:var(--t3);padding:40px;font-size:13px">还没有分享记录<br>快去分享第一首歌吧 🎵</div>';return;}
+  list.innerHTML=myPosts.map(p=>{
+    const d=p.createdAt?.toDate?p.createdAt.toDate():new Date();
+    return `<div class="hist-item">
+      <div class="hist-date-box"><div class="hist-day">${d.getDate()}</div><div class="hist-mon">${d.getMonth()+1}月</div></div>
+      <div class="hist-cov" style="background:linear-gradient(135deg,${p.song?.c||'#888'}88,${p.song?.c||'#888'}44)">${p.song?.e||'🎵'}</div>
+      <div class="hist-info"><div class="hist-sname">${p.song?.n||'未知'}</div><div class="hist-meta">${p.song?.a||''} · ${p.mood?.t||''}</div></div>
+      <div class="hist-mood">${p.mood?.e||''}</div>
+    </div>`;
+  }).join('');
+}
+
+// PROFILE
+function renderProfile() {
+  if(!window._me) return;
+  document.getElementById('prof-emoji').textContent=window._me.emoji||'🌙';
+  document.getElementById('prof-name').textContent=window._me.name||'用户';
+  document.getElementById('prof-room').textContent=`房间码：${window._rid||'—'}`;
+  updateProfStats();
+  const myPosts=(window._posts||[]).filter(p=>p.userId===window._me?.uid);
+  document.getElementById('prof-hist').innerHTML=myPosts.slice(0,8).map(p=>`
+    <div class="hist-item">
+      <div class="hist-cov" style="background:linear-gradient(135deg,${p.song?.c||'#888'}88,${p.song?.c||'#888'}44)">${p.song?.e||'🎵'}</div>
+      <div class="hist-info"><div class="hist-sname">${p.song?.n||'未知'}</div><div class="hist-meta">${p.song?.a||''} · ${ago(p.createdAt)}</div></div>
+      <div class="hist-mood">${p.mood?.e||''}</div>
+    </div>`).join('')||'<div style="text-align:center;color:var(--t3);padding:20px;font-size:12px">还没有分享记录</div>';
+}
+
+function updateProfStats() {
+  const myPosts=(window._posts||[]).filter(p=>p.userId===window._me?.uid);
+  document.getElementById('ps-songs').textContent=myPosts.length;
+  const days=new Set(myPosts.map(p=>{const d=p.createdAt?.toDate?.();return d?d.toISOString().slice(0,10):td();}));
+  document.getElementById('ps-days').textContent=days.size;
+  document.getElementById('ps-streak').textContent=Math.min(myPosts.length,99);
+}
+
+// INIT
+renderMoodBtns();
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+if(!window._cfg) setTimeout(hideLoading,300);
+</script>
+</body>
+</html>
